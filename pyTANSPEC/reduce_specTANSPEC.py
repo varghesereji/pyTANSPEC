@@ -36,7 +36,7 @@ from .libs import imarith
 import WavelengthCalibrationTool.reidentify as reident
 from WavelengthCalibrationTool import recalibrate
 import SpectrumExtractor.spectrum_extractor as specextractor
-from .libs import imarith
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -709,7 +709,6 @@ def DivideSmoothGradient(PC,inputimg,outputimg):
     else:      
         prihdr = hdulist[0].header
         slit = prihdr['Slit'] #it is required when MakeMasterFlat will be called
-        print(slit)
         #Normalise this continuum flat using its median smoothed version
         NormContdata = inputimgdata / smoothGrad
         #generating the combined conti flat
@@ -776,7 +775,6 @@ def SubtractSmoothGradient(PC,inputimg,outputimg):
 def CombDith_FlatCorr_subrout(PC,method="median"):
     """ This will combine (default=median) with avsigclip the images in single dither and also create corresponding normalized flats [,sky] and divide[,subtract] for flat [,sky] correction """
     directories = LoadDirectories(PC,CONF=False)
-    print(directories)
     for night in directories:
         PC.currentnight = night # Update the night directory for using GetFullPath()    
         print('Working on night: '+night)
@@ -814,8 +812,10 @@ def CombDith_FlatCorr_subrout(PC,method="median"):
 
         #Now iterate through every list of images to combine
         outlogFILE=open(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'AllObjects-ProcessedImg.List'),'w')
+        file_used = []
         for imglist in ListofLists:
-            print(imglist)
+            if PC.TimeSeries == 'Y':
+                print('Working on the set', imglist)
             if len(imglist) == 1 : #Single image. no need to combine
                 OutCombimg=imglist[0]
                 shutil.copy2(night+'/'+imglist[0],os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,OutCombimg))  #Copying the file dito..
@@ -828,7 +828,7 @@ def CombDith_FlatCorr_subrout(PC,method="median"):
                     
                 with open(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,OutCombimg+'.imcombine.List'),'r') as CombInpFile: 
                     CombfileList=[(combset.split()[0]) for combset in CombInpFile]
-                
+                    
                 #Outputhdulist = combine_frames(os.path.join(PC.RAWDATADIR,night,CombfileList), method='median')
                 Outputhdulist = imarith.combine_frames(CombfileList, method='median')
                 imarith.WriteFitsOutput(Outputhdulist,os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,OutCombimg),overwrite=True)
@@ -840,6 +840,8 @@ def CombDith_FlatCorr_subrout(PC,method="median"):
             Flats2Comb=set(Flats2Comb)  #Making a set to remove duplicates
             #Write all these flat names to a file.
             imgflatlistfname=os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,OutCombimg[:-5]+'.flatlist')
+            flatlist = open(imgflatlistfname, 'w')
+            flatlist.close()
             flats2comblist = []
             # for fla in Flats2Comb:
             #     flats2comblist.append(fla)
@@ -874,6 +876,7 @@ def CombDith_FlatCorr_subrout(PC,method="median"):
                 if filename[:9] == 'Biweight_':
                     FlatCombfileList.append(fname)
                 #Outputhdulist = combine_frames(os.path.join(PC.RAWDATADIR,night,CombfileList), method='median')
+            file_used.append(FlatCombfileList)
             Outputhdulist = imarith.combine_frames(FlatCombfileList, method='median')
             imarith.WriteFitsOutput(Outputhdulist,os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,outflatname),overwrite=True)
             
@@ -971,7 +974,9 @@ def Manual_InspectCalframes_subrout(PC):
         PC.currentnight = night # Upgating the night directory for using GetFullPath()
         AlwaysRemove = []
         AlwaysAccept = []
+
         for inpfile,outfile in zip(filelist,outfilelist):
+            set_no = 0
             print('-*-'*8)
             print('Files in: \033[91m {0} \033[0m'.format(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,inpfile)))
             print('-*-'*8)
@@ -984,6 +989,7 @@ def Manual_InspectCalframes_subrout(PC):
             print('Use the above two options only when you are sure all the images are good. Do not use them if you are not sure.')
             print('-'*5)
             flag_list = []
+            star_cal_dict = {}
             for inpline in inFILE:
                 inplinelist = shlex.split(inpline.rstrip())
                 if len(inplinelist) > 0 : ScienceImg = inplinelist[0]
@@ -996,7 +1002,10 @@ def Manual_InspectCalframes_subrout(PC):
                         if img not in AlwaysAccept:
                             #iraf.display(PC.GetFullPath(img),1)
                             #ImagePlot(fits.getdata(night+'/'+img), title=objline)
-                            ImagePlot(fits.getdata(PC.GetFullPath(img)), title=img)
+                            if inpfile == filelist[0] and PC.InspectFl == 'Y':
+                                ImagePlot(fits.getdata(PC.GetFullPath(img)), title=img)
+                            elif inpfile == filelist[1] and PC.InspectCal == 'Y':
+                                ImagePlot(fits.getdata(PC.GetFullPath(img)), title=img)
                             print(PC.GetFullPath(img))
                             verdict=''
                             #verdict=input('Enter "r" to reject, "ra" to reject always in future, "aa" to always accept in future:')
@@ -1020,14 +1029,25 @@ def Manual_InspectCalframes_subrout(PC):
                                 AcceptAllThisNight = True
                                 print("Accepting all remainging images from all remaining nights (Super Dangerous). ")
                                 break
+
                 if not FinalCalImgs : print('\033[91m ALERT: \033[0m No Calibration Images for {0} {1}'.format(night,ScienceImg))
                 #Writing the final surviving calibration files to output file
                 # Averaging have to be done here, then add file names as last 2 elements.
                 input_path = night
                 output_path = os.path.join(PC.RAWDATADIR,PC.OUTDIR,night)
-                header_keys = ['SLIT', 'GRATING', 'OBJECT', 'CALMIR', 'ARGONL', 'NEONL', 'CONT1L','CONT2L']
-                avglampfiles = imarith.combine_files(FinalCalImgs, input_path, output_path, keys=header_keys)
                 flag_list = FinalCalImgs
+                f = False
+                header_keys = ['SLIT', 'GRATING', 'OBJECT', 'CALMIR', 'ARGONL', 'NEONL', 'CONT1L','CONT2L']
+#                print(star_cal_dict, FinalCalImgs, flag_list)
+                for l in list(star_cal_dict.values()):
+                    if FinalCalImgs == l[:-1] or FinalCalImgs == l[:-2]:
+                        print('Given set already done.')
+                        f = True
+                        break
+                if not f:
+                    set_no += 1  
+                    avglampfiles = imarith.combine_files(FinalCalImgs, input_path, output_path, keys=header_keys)
+                star_cal_dict[ScienceImg] = flag_list
                 FinalCalImgs.append(avglampfiles[0])
                 if len(avglampfiles)>1:
                     FinalCalImgs.append(avglampfiles[1])
@@ -1088,21 +1108,32 @@ def Manual_InspectObj_subrout(PC):
         FWHM = 4.0  #Not important what number you give here...
         newfilter = 'Blah'
         newexptime = '-999'
+        acceptall = False
+        if PC.TimeSeries == 'Y':
+            print('Since you need a timeseries data, I assume you do not want to inspect each frames')
+            acceptall = True
         for objline in ObjFILE:
             try:
                 img = objline.split()[0]
-                ImagePlot(fits.getdata(night+'/'+img), title=objline)
+                if PC.INSPECTSC == 'Y' and acceptall == False:
+                    ImagePlot(fits.getdata(night+'/'+img), title=objline)
             except IndexError:
                 print('Blank line in '+os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'AllObjects.List'))
                 continue
-            
-            UserInput = input('Enter "r" to reject and "aa" to accept: ')
+            if acceptall:
+                UserInput = 'aa'
+            else:
+                print('If you want to accept all the images without inspecting, enter "acceptall"')
+                UserInput = input('Enter "r" to reject and "aa" to accept: ')
             if UserInput == 'r':
                 print("Removing this image : "+img)
                 continue
             elif UserInput == 'aa':
                 print("Always accept this image forever this night : "+img)
                 pass
+            elif UserInput == 'acceptall':
+                acceptall = True
+                print("Accepting every single remainging images of this night (Dangerous). ")
             else:
                 print('Enter either "r" or "aa", No other key works.')
                 sys.exit()
@@ -1134,7 +1165,7 @@ def Manual_InspectObj_subrout(PC):
             # or filter wheels or exptime have changed.
             FiltersChanged = newfilter != oldfilter 
             ExptimeChanged = float(newexptime) != float(oldexptime)
-            if StarShifted or FiltersChanged or ExptimeChanged : Obj2CombFILE.write('\n')
+            if StarShifted or FiltersChanged or ExptimeChanged or PC.TimeSeries == 'Y': Obj2CombFILE.write('\n')
 
             #Now, add this img name to dither image list
             Obj2CombFILE.write(img+' '+str(newX)+' '+str(newY)+'\n')
@@ -1594,6 +1625,7 @@ class PipelineConfig(object):
                     if con.split()[0] == "INSTRUMENT=" :
                         self.INSTRUMENT = con.split()[1]
                     elif con.split()[0] == "TODO=" :
+                        print(con.split()[1])
                         self.TODO = con.split()[1]
                     elif con.split()[0] == "OUTPUTDIR=" :
                         self.OUTDIR = con.split()[1]
@@ -1605,7 +1637,17 @@ class PipelineConfig(object):
                     #    self.OVERSCAN = con.split()[1]
                     elif con.split()[0] == "Selected_Window_Dither_Find=" :
                         self.WindowSelection = (int(con.split()[1]), int(con.split()[2]))
-                    
+
+                    elif con.split()[0] == "TIMESERIES=":
+                        self.TimeSeries = con.split()[1][0].upper()
+                    elif con.split()[0] == "INSPECTSC=":
+                        print(con.split())
+                        self.INSPECTSC = con.split()[1][0].upper()
+                    elif con.split()[0] == "INSPECTFL=":
+                        self.InspectFl = con.split()[1][0].upper()
+                    elif con.split()[0] == "INSPECTCAL=":
+                        self.InspectCal = con.split()[1][0].upper()
+
                     elif con.split()[0] == "COMBINEIMGS=" :
                         self.IMGCOMBINE = con.split()[1][0].upper()
                     #elif con.split()[0] == "IMGCOMBMETHOD=" :
@@ -1984,6 +2026,7 @@ def main(raw_args=None):
     try : 
 #        PC = PipelineConfig(ConfigFilename = sys.argv[1])
         PC = PipelineConfig(ConfigFilename = args.ConfigFile)
+        print(PC.TODO)
     except IOError :
         print ("Error: Cannot open the file "+args.ConfigFile+". Setup the config file based on ScriptSettings.conf file correctly, before running the script.")
         sys.exit(1)
