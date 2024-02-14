@@ -1501,7 +1501,6 @@ def CreateLogFilesFromFits_subrout(PC,hdu=0):
                 prihdr = Instrument.StandardiseHeader(prihdr,filename=img)
                 for hkeys in LogColumns :   #Capture if these keywords are missing in header, and replace with -NA-
                     if hkeys not in prihdr : prihdr[hkeys]='-NA-'
-                    if hkeys == 'FNUM': prihdr[hkeys] = int(prihdr[hkeys])
                 outfile.write(img+' '+RowString.format(**dict(prihdr))+' {0}\n'.format(i))
         os.chdir(PC.RAWDATADIR)
     print("{0} saved in each night's directory. Edit in manually for errors like ACTIVE filter.".format(LogFilename))
@@ -1861,6 +1860,8 @@ class InstrumentObject(object):
         """ Return the header object after standardising the values in it, specific to instrument."""
         
         if self.Name == 'TANSPEC':
+            FNUM = prihdr['FNUM']
+            prihdr['FNUM'] = int(FNUM)
             prihdr[self.PC.COMMENTHDR] = prihdr['COMMENT'][-1].split('/')[0][1:].strip()
             del prihdr['COMMENT']
             try:
