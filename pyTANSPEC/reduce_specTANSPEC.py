@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 #!/usr/anaconda3/envs/my_env_py3/bin python
 #This script is to semi-automate basic data reduction of TANSPEC cross-dispersed spectroscopic data.
@@ -195,25 +196,32 @@ def SpectralExtraction_subrout(PC):
                 OutputObjSpecWlCaliList = LrSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputObjSpec,APERTUREWINDOW,BKGWINDOWS,night,
                                                                        Img2Lamp, Img2NeLamp, Img2Filt, Filt2finalspecs, img)
         N = len(OutputObjSpecWlCaliList)
-
+        wlc_file = open(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'Final_wlc_file.txt'),'w')
+        wlc_file.close()
         if PC.SCOMBINE == 'YES' and N> 1:
             OutputObjSpecWlCaliFinal = OutputObjSpecWlCaliList[0].rstrip('.fits') + '.final' + '.avg.fits'
             OutputObjSpecWlCaliFinalhdul = SpecMake(OutputObjSpecWlCaliList, method = 'mean',ScaleF=ScaleFac)
             OutputObjSpecWlCaliFinalhdul.writeto(OutputObjSpecWlCaliFinal, overwrite=True)
+            wlc_file = open(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'Final_wlc_file.txt'),'a')
+            wlc_file.write(OutputObjSpecWlCaliFinal)
+            wlc_file.close()
         elif PC.SCOMBINE == 'NO' and N> 1:
             for i in range(N):
                 OutputObjSpecWlCaliFinal = OutputObjSpecWlCaliList[i].rstrip('.fits') + '.final.fits'
                 OutputObjSpecWlCaliFinalhdul = SpecMake([OutputObjSpecWlCaliList[i]], method = None,ScaleF=ScaleFac)
                 OutputObjSpecWlCaliFinalhdul.writeto(OutputObjSpecWlCaliFinal, overwrite=True)
+                wlc_file = open(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'Final_wlc_file.txt'),'a')
+                wlc_file.write(OutputObjSpecWlCaliFinal+'\n')
+                wlc_file.close()
         elif N == 1:
             OutputObjSpecWlCaliFinal = OutputObjSpecWlCaliList[0].rstrip('.fits') + '.final.fits'
             OutputObjSpecWlCaliFinalhdul = SpecMake(OutputObjSpecWlCaliList, method = None, ScaleF=ScaleFac)
             OutputObjSpecWlCaliFinalhdul.writeto(OutputObjSpecWlCaliFinal, overwrite=True)
+            wlc_file = open(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'Final_wlc_file.txt'),'a')
+            wlc_file.write(OutputObjSpecWlCaliFinal)
+            wlc_file.close()
         else:
             raise NotImplementedError('Unknown combine {0}'.format(PC.SCOMBINE))
-        wlc_file = open(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'Final_wlc_file.txt'),'w')
-        wlc_file.write(OutputObjSpecWlCaliFinal)
-        wlc_file.close()
     print('All nights over...')
 
 
@@ -259,7 +267,7 @@ def LrSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     new_config_file_star = SpectrumFile.rstrip('.fits')+'.config'
     with open(new_config_file_star, 'w') as configfile:
         config.write(configfile)            
-    print(new_config_file_star) #Varghese added this
+   
     OutputObjSpec, Avg_XD_shift, PixDomain = specextractor.main([SpectrumFile, new_config_file_star, OutputObjSpec])
 
     #plot the spectra for the first look
@@ -337,7 +345,7 @@ def LrSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     # Template Matching
     # print('Template Matching')
     # print(fits.getdata(OutputArLampSpec))
-    print(RefFile)
+
     wl_soln, shift = recalibrate.ReCalibrateDispersionSolution(Lamp_array, np.load(RefFile).T)
 
 
@@ -350,7 +358,6 @@ def LrSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
 
     #wl calibrated spectra
     OutputObjSpecWlCali =  OutputObjSpec.rstrip('fits') + 'wlc.fits'
-    print('wl calib file', OutputObjSpecWlCali)
     OutputObjSpechdul.writeto(OutputObjSpecWlCali)            
     OutputObjSpecWlCaliList.append(OutputObjSpecWlCali)                        
     return OutputObjSpecWlCaliList
@@ -537,6 +544,7 @@ def FluxCalibration_subrout(PC):
             wlc_data = list([data for data in wlc_data_files])
         for data_file in wlc_data:
 #            print(data_file)
+            data_file = data_file[:-1]
             star_data = fits.getdata(data_file, ext=0)
             wl_data = fits.getdata(data_file, ext=1)
             star_header = fits.getheader(data_file)
@@ -592,51 +600,62 @@ def SpectralPairSubtraction_subrout(PC):
             filtstr = filt.replace(" ","_") # Replace spaces in filter name for easier filenames
             #List of images with this filter.
             Imglist = [img for img in Allimglist if Filtrfiledic[Ditherfiledic[img]] == filt ]            
-       
-            for i,img in enumerate(Imglist): 
-                ImagePlot(fits.getdata(PC.GetFullPath(img)), title=img) #to display the image
+            if PC.INSPECTSC == 'Y':
+                for i,img in enumerate(Imglist): 
+                    ImagePlot(fits.getdata(PC.GetFullPath(img)), title=img) #to display the image
 #                pass
 
             if len(Imglist) != 0:
+
                 ABCDtoimg = dict()
                 Anumb = ord('A')
+                tnum = 0
+
                 with open(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'ABCDtoImageTable_'+filtstr+'.txt'),'w') as AlphatoFILE :
                     for i,img in enumerate(Imglist):
-                        alpha = chr(Anumb+i)
+                        if PC.TimeSeries == 'N':
+                            alpha = chr(Anumb+i)
+                        else:
+                            alpha = tnum
                         ABCDtoimg[alpha] = img
                         print("%s : %s"%(alpha,img))
                         AlphatoFILE.write("%s  %s"%(alpha,img)+' \n')
+                        tnum += 1
+                if PC.TimeSeries == 'N':
+                    print('-'*30)
+                    print("Enter the pairs to subtract in space separated form ")
+                    print("For Example an input: AB BA A")
+                    print("Corresponding images produced by subtraction or not are : A-B, B-A, and A")
+                    print("Note: the final A is not a subtracted image ")
+                    subpairs = input('Pairs to process: ')
+                    subpairs = subpairs.split()
 
-                print('-'*30)
-                print("Enter the pairs to subtract in space separated form ")
-                print("For Example an input: AB BA A")
-                print("Corresponding images produced by subtraction or not are : A-B, B-A, and A")
-                print("Note: the final A is not a subtracted image ")
-                subpairs = input('Pairs to process: ')
-                subpairs = subpairs.split()
-                for instr in subpairs:
-                    instr = instr.upper()
-                    if len(instr) == 2 :
-                        Outimg = OutFilePrefix+'_'+filtstr+'_'+instr[0]+'-'+instr[1]+'.fits'
-    #                    try:                            #iraf.imarith(operand1=PC.GetFullPath(ABCDtoimg[instr[0]]),op="-",operand2=PC.GetFullPath(ABCDtoimg[instr[1]]),result=PC.GetFullPath(Outimg))
-                        Outputhdulist = imarith.subtract_frames(PC.GetFullPath(ABCDtoimg[instr[0]]), PC.GetFullPath(ABCDtoimg[instr[1]]), FluxExt=[0])
-                        if PC.INSTRUMENT == 'TANSPEC':
-                            Outputhdulist[0].data = np.clip(Outputhdulist[0].data, -1, None) 
-                        imarith.WriteFitsOutput(Outputhdulist,PC.GetFullPath(Outimg),overwrite=True)
-     
-#                        except iraf.IrafError as e :
-#                            print(e)
-#                            print('Skipping to next instruction')
-#                            continue
-                    elif len(instr) == 1 : 
-                        Outimg = OutFilePrefix+'_'+filtstr+'_'+instr[0]+'.fits'
-                        shutil.copy(PC.GetFullPath(ABCDtoimg[instr[0]]),PC.GetFullPath(Outimg))
-                    else : 
-                        print("Could not understand "+instr)
-                        continue
-                    print(Outimg)
-                    outlog.write('{0} {1} {2} "{3}" \n'.format(Outimg,ArLampfiledic[Ditherfiledic[ABCDtoimg[instr[0]]]],NeLampfiledic[Ditherfiledic[ABCDtoimg[instr[0]]]],filt))
-                    
+                    for instr in subpairs:
+                        instr = instr.upper()
+                        if len(instr) == 2 :
+                            Outimg = OutFilePrefix+'_'+filtstr+'_'+instr[0]+'-'+instr[1]+'.fits'
+                            Outputhdulist = imarith.subtract_frames(PC.GetFullPath(ABCDtoimg[instr[0]]), PC.GetFullPath(ABCDtoimg[instr[1]]), FluxExt=[0])
+                            if PC.INSTRUMENT == 'TANSPEC':
+                                Outputhdulist[0].data = np.clip(Outputhdulist[0].data, -1, None) 
+                            imarith.WriteFitsOutput(Outputhdulist,PC.GetFullPath(Outimg),overwrite=True)
+
+                        elif len(instr) == 1 :                        
+                            Outimg = OutFilePrefix+'_'+filtstr+'_'+instr[0]+'.fits'
+                            shutil.copy(PC.GetFullPath(ABCDtoimg[instr[0]]),PC.GetFullPath(Outimg))
+                        else : 
+                            print("Could not understand "+instr)
+                            continue
+                        print(Outimg)
+                        outlog.write('{0} {1} {2} "{3}" \n'.format(Outimg,ArLampfiledic[Ditherfiledic[ABCDtoimg[instr[0]]]],NeLampfiledic[Ditherfiledic[ABCDtoimg[instr[0]]]],filt))
+                elif PC.TimeSeries == 'Y':
+                    print('-'*30)
+                    print('You are reducing time series spectra')
+                    print('We expect there are no pairs')
+                    for i, img in enumerate(Imglist):
+                        Outimg = OutFilePrefix + '_' + filtstr + '_' + str(i) + '.fits'
+                        shutil.copy(PC.GetFullPath(ABCDtoimg[i]),PC.GetFullPath(Outimg))
+                        print('Copied', ABCDtoimg[i], 'to', Outimg)
+                        outlog.write('{0} {1} {2} "{3}" \n'.format(Outimg,ArLampfiledic[Ditherfiledic[ABCDtoimg[i]]],NeLampfiledic[Ditherfiledic[ABCDtoimg[i]]],filt))
                 #Now Copy the already identified Repository Lamps to this directory.
 #                print("Copying already identified lines of this filter %s from Repository.."%(filt))
 #                if not os.path.isdir(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'database')): os.makedirs(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'database'))
