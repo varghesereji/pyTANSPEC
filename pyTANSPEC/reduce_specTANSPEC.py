@@ -62,11 +62,18 @@ except ImportError:
     import configparser as  ConfigParser
     
        
-def WriteSpecToFitsFile(SpecFlux, Wavel, fitsheader):
+def WriteSpecToFitsFile(SpecFlux, Wavel, fitsheader, VarianceF=None, Name1=None, Name2=None):
     # Creating a new file to store data (flux and wavelength)
     hdul1 = fits.PrimaryHDU(SpecFlux, header=fitsheader)
-    hdul2 = fits.ImageHDU(Wavel)
-    hdulist = fits.HDUList([hdul1, hdul2])
+    if Name2 is None:
+        hdul2 = fits.ImageHDU(Wavel)
+    else:
+        hdul2 = fits.ImageHDU(Wavel, name=Name2)
+    if VarianceF is not None:
+        hdul3 = fits.ImageHDU(VarianceF, name=Name1)
+        hdulist = fits.HDUList([hdul1, hdul3, hdul2])
+    else:
+        hdulist = fits.HDUList([hdul1, hdul2])
     return hdulist  
 
 
@@ -100,16 +107,23 @@ def SpecMake(InputFiles, method = None, ScaleF = None):
     """
     
     N = len(InputFiles)
+    print(InputFiles)
     fitsheader = fits.getheader(InputFiles[0])
-    SpecWavelF = fits.getdata(InputFiles[0], 3)
-    
-    SpecFluxF = []    
+    hdulist = fits.open(InputFiles[0])
+    SpecWavelF = hdulist['WAVELENGTH'].data
+    hdulist.close()
+    SpecFluxF = []
+    VarianceF = []
     if  N > 1:
         for i in range(N):
             Spechdul = fits.open(InputFiles[i]) #
             #Doing the background substraction and scaling
             SpecFlux = Spechdul[0].data - (np.mean([Spechdul[1].data, Spechdul[2].data], axis = 0)*(ScaleF))
             SpecFluxF.append(SpecFlux)
+            if 'VARIANCE' in Spechdul:
+                SpecVar = Spechdul['VARIANCE'].data + (Spechdul['BKG VARIANCE 0'].data + Spechdul['BKG VARIANCE 1'].data) * ScaleF**2/4
+                VarianceF.append(SpecVar)
+            Spechdul.close()
             
         if method == 'sum':
             SpecFluxF = np.sum(SpecFluxF, axis=0) #only fluxes are added
@@ -127,9 +141,16 @@ def SpecMake(InputFiles, method = None, ScaleF = None):
         Spechdul = fits.open(InputFiles[0]) #
         #Doing the background substraction and scaling
         SpecFlux = Spechdul[0].data - (np.mean([Spechdul[1].data, Spechdul[2].data], axis = 0)*(ScaleF))
-        SpecFluxF = SpecFlux   
-    
-    Outputhdulist = WriteSpecToFitsFile(SpecFluxF, SpecWavelF, fitsheader=fitsheader)        
+        if 'VARIANCE' in Spechdul:
+            SpecVar = Spechdul['VARIANCE'].data + (Spechdul['BKG VARIANCE 0'].data + Spechdul['BKG VARIANCE 1'].data) * ScaleF**2/4
+            
+
+        SpecFluxF = SpecFlux
+        VarianceF = SpecVar
+        Spechdul.close()
+    if len(VarianceF) == 0:
+        VarianceF = None
+    Outputhdulist = WriteSpecToFitsFile(SpecFluxF, SpecWavelF, fitsheader, VarianceF, Name1= 'VARIANCE', Name2='WAVELENGTH')        
 
     return Outputhdulist
         
@@ -319,6 +340,7 @@ def LrSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
             slit = hdularc1_slit 
         else:
             sys.exit("Slit width of lamps does not match: check header of both lamps. ")
+        hdularc1data = (hdularc1data + hdularc2data)/2
         # for i in range(3):
         #     hdularc1data[i] = hdularc2data[i] # 1st 3-orders (from bluer end) of Ar replaced by Ne
     else:
@@ -351,7 +373,7 @@ def LrSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
 
     AllOutWlSolFile = OutputWavlFile.format('all')
     OutputObjSpechdul = fits.open(OutputObjSpec)
-    AllOutWlSol = wl_soln
+    AllOutWlSol = [wl_soln]
     #to make wavelength data as ImageHdu
     AllOutWlSolImgHDU = fits.ImageHDU(AllOutWlSol, name = 'Wavelength')
     OutputObjSpechdul.append(AllOutWlSolImgHDU)
@@ -364,7 +386,6 @@ def LrSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
 
 def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputObjSpec,APERTUREWINDOW,BKGWINDOWS,night,Img2Lamp, Img2NeLamp, Img2Filt, Filt2finalspecs, img):
     """ Extracts spectra from 2d image and also applies wavelength calibration """
-
     #finding the configuration file for spectrum extraction as well as ContinuumFile and ApertureLabel as references
     pkgpath = os.path.split(pkgutil.get_loader('pyTANSPEC').get_filename())[0]
     ContinuumFile = os.path.join(pkgpath,'data/bd491296axd_s0.5Ahg-00031.Z.fits')
@@ -415,6 +436,7 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     bkg = np.mean([hdulist[1].data, hdulist[2].data], axis=0)
     SigWithoutBkg = SigWithBkg - (bkg*ScaleFac)
 
+    
     plt.plot(SigWithoutBkg.flatten(), alpha=0.5)
     plt.title("Extracted Spectra from all {} orders".format((SigWithBkg.shape)[0]))
     plt.xlabel("Flattened pixels")
@@ -487,22 +509,26 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
 
     hdularc1[0].data = hdularc2data
     OutputCombLampSpec = OutputArLampSpec[:-9]+'combarc.fits'
-    hdularc1.writeto(OutputCombLampSpec)
+    hdularc1.writeto(OutputCombLampSpec, overwrite=True)
 
     # WL calibration by template matching
     pkgpath = os.path.split(pkgutil.get_loader('pyTANSPEC').get_filename())[0]
     RefDispTableFile = os.path.join(pkgpath,'data','LAMPIDENTDIR',slit,'tanspecArNe' + '{}' + '_template.npy')
     OutputWavlFile =  os.path.splitext(OutputCombLampSpec)[0] + '.OutputWavlFile' + '{}' + '.npy'
     ModelForDispersion = 'p3' # PC.WLFITFUNC
-    OutputWavlFile = None
+    OutputWavlSoln = None
     for order in range(0, 10):
         lamp = hdularc2data[order]
         template = np.load(RefDispTableFile.format(order))
-        soln, shift = recalibrate.ReCalibrateDispersionSolution(lamp, template.T)
-        if OutputWavlFile is None:
-            OutputWavlFile = soln
+        try:
+            soln, shift = recalibrate.ReCalibrateDispersionSolution(lamp, template.T)
+        except RuntimeError:
+            soln = template[0]
+        if OutputWavlSoln is None:
+            OutputWavlSoln = soln
         else:
-            OutputWavlFile = np.vstack((OutputWavlFile, soln))
+            # print(OutputWavlSoln, 'soln', soln)
+            OutputWavlFile = np.vstack((OutputWavlSoln, soln))
     #to make wavelength data as ImageHdu
     AllOutWlSol = OutputWavlFile
     OutputObjSpechdul = fits.open(OutputObjSpec)
@@ -511,8 +537,8 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
 
     #wl calibrated spectra
     OutputObjSpecWlCali =  OutputObjSpec.rstrip('fits') + 'wlc.fits'
-    print(OutputObjSpecWlCali)
-    OutputObjSpechdul.writeto(OutputObjSpecWlCali)            
+    # print(OutputObjSpecWlCali)
+    OutputObjSpechdul.writeto(OutputObjSpecWlCali, overwrite=True)            
     OutputObjSpecWlCaliList.append(OutputObjSpecWlCali)                        
     return OutputObjSpecWlCaliList   
 
@@ -543,18 +569,29 @@ def FluxCalibration_subrout(PC):
         with open(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'Final_wlc_file.txt'),'r') as wlc_data_files:
             wlc_data = list([data for data in wlc_data_files])
         for data_file in wlc_data:
-#            print(data_file)
-            data_file = data_file[:-1]
+            print(data_file)
+            # data_file = data_file[:-1]
+            
             star_data = fits.getdata(data_file, ext=0)
-            wl_data = fits.getdata(data_file, ext=1)
             star_header = fits.getheader(data_file)
+            star_header['HISTORY'] = 'Flux calibration was done'
+            
+            Spechdul = fits.open(data_file)
+            wl_data = Spechdul['WAVELENGTH'].data
+            FLC_variance = None
+            varname = None
             
             FLC_data = star_data / response_function
+            if 'VARIANCE' in Spechdul:
+                variance = Spechdul['VARIANCE'].data
+                FLC_variance = variance / response_function**2
+                varname = 'VARIANCE'
+
 
             OutputObjSpecFlCalFinal = data_file.rstrip('.fits') + '.flc.fits'
-
-            hdulist = WriteSpecToFitsFile(FLC_data, wl_data, star_header)
-            hdulist.writeto(OutputObjSpecFlCalFinal)
+            print(wl_data)
+            hdulist = WriteSpecToFitsFile(FLC_data, wl_data, star_header, FLC_variance, Name1=varname, Name2='WAVELENGTH')
+            hdulist.writeto(OutputObjSpecFlCalFinal, overwrite=True)
             print('The flux calibrated spectra is saved as:',OutputObjSpecFlCalFinal)
 
 def SpectralPairSubtraction_subrout(PC):
@@ -653,8 +690,8 @@ def SpectralPairSubtraction_subrout(PC):
                     print('We expect there are no pairs')
                     for i, img in enumerate(Imglist):
                         Outimg = OutFilePrefix + '_' + filtstr + '_' + str(i) + '.fits'
-                        shutil.copy(PC.GetFullPath(ABCDtoimg[i]),PC.GetFullPath(Outimg))
-                        print('Copied', ABCDtoimg[i], 'to', Outimg)
+                        shutil.move(PC.GetFullPath(ABCDtoimg[i]),PC.GetFullPath(Outimg)) # Varghese cange to move insted of copy.
+                        print('Renamed', ABCDtoimg[i], 'to', Outimg)
                         outlog.write('{0} {1} {2} "{3}" \n'.format(Outimg,ArLampfiledic[Ditherfiledic[ABCDtoimg[i]]],NeLampfiledic[Ditherfiledic[ABCDtoimg[i]]],filt))
                 #Now Copy the already identified Repository Lamps to this directory.
 #                print("Copying already identified lines of this filter %s from Repository.."%(filt))
