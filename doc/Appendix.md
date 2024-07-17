@@ -1,18 +1,18 @@
 ![img](pyTANSPEC_logo.png)
 
-[Home](Pipeline_Documentation.md)
+[Home](Pipeline_Documentation.html)
 
-[Pipeline In a Nutshell](Pipeline_in_a_nutshell.md)
+[Pipeline In a Nutshell](Pipeline_in_a_nutshell.html)
 
-[Installation](Installation.md)
+[Installation](Installation.html)
 
-[Getting Started](Getting_started.md)
+[Getting Started](Getting_started.html)
 
-[Tasks](Tasks.md)
+[Tasks](Tasks.html)
 
-[Advantages and Limitations of the pipeline](adv_disadv.md)
+[Advantages and Limitations of the pipeline](adv_disadv.html)
 
-[Appendix](Appendix.md)
+[Appendix](Appendix.html)
 
 
 # Appendix

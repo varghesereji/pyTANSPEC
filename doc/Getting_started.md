@@ -1,18 +1,18 @@
 ![img](pyTANSPEC_logo.png)
 
-[Home](Pipeline_Documentation.md)
+[Home](Pipeline_Documentation.html)
 
-[Pipeline In a Nutshell](Pipeline_in_a_nutshell.md)
+[Pipeline In a Nutshell](Pipeline_in_a_nutshell.html)
 
-[Installation](Installation.md)
+[Installation](Installation.html)
 
-[Getting Started](Getting_started.md)
+[Getting Started](Getting_started.html)
 
-[Tasks](Tasks.md)
+[Tasks](Tasks.html)
 
-[Advantages and Limitations of the pipeline](adv_disadv.md)
+[Advantages and Limitations of the pipeline](adv_disadv.html)
 
-[Appendix](Appendix.md)
+[Appendix](Appendix.html)
 
 
 # Getting Started
@@ -30,6 +30,10 @@ The config file should be saved in the directory where the sub-directory of your
 -   'OUTPUTDIR=': Name of the output directory.
 -   'TEXTEDITOR=': Give the name of text editor you want to use(eg:emacs, vi, vim, gedit etc). In task 1 and 2, The text editor window will open up and you can make required changes in that.
 -   'NIGHTLOGFILE=': Name of the log file for each night. This will be created in Task 0. (eg: ObsLogofImages.txt)
+-   'TIMESERIES=': Set N if you are NOT doing timeseries extraction. Y if you are doing timeseries extraction.
+-   'INSPECTSC=': Set Y if you want to inspect each science frame in task 2. If N, frame won't be open.
+-   'INSPECTFL=': Set Y if you want to inspect each flat frame in task 3. If N, frame won't be open.
+-   'INSPECTCAL=': Set Y if you want to inspect each argon and neon frame in task 3. If N, frame won't be open.
 -   'COMBINEIMGS= ': Number of images you want to combine. (Keep it as N)
 -   'REMOVE\\<sub>COSMIC</sub>=': Set Y if you want to do cosmic ray reduction.
 -   'HEADER KEY WORDS': Pipeline uses the certain keywords while selecting files. Make no change here.
