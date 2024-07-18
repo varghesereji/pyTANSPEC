@@ -6,7 +6,7 @@ def readme():
         return f.read()
 
 setup(name='pyTANSPEC',
-      version='1.0.1',
+      version='1.1.1',
       description='pyTANSPEC package: Python Tool for extracting 1D TANSPEC XD-spectra from 2D image',
       long_description = readme(),
       classifiers=[
@@ -14,7 +14,7 @@ setup(name='pyTANSPEC',
           'Programming Language :: Python :: 3.7+',
           'Topic :: Scientific/Engineering :: Astronomy',
       ],
-      keywords='Spectrum Extraction For TANSPEC XD-mode',
+      keywords='Spectrum Extraction For TANSPEC',
       url='https://github.com/astrosupriyo/pyTANSPEC',
       author='Supriyo Ghosh',
       author_email='sbuphy2010@gmail.com',
