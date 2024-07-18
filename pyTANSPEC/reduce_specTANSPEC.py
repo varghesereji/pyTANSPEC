@@ -209,7 +209,6 @@ def SpectralExtraction_subrout(PC):
             APERTUREWINDOW = PC.APERTUREWINDOW
             BKGWINDOWS = PC.BKGWINDOWS            
             ScaleFac = (APERTUREWINDOW[1] - APERTUREWINDOW[0]) / (BKGWINDOWS[1][1] - BKGWINDOWS[1][0])
-
             if PC.TODO == 'SX':
                 OutputObjSpecWlCaliList = xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputObjSpec,APERTUREWINDOW,BKGWINDOWS,night,
                                                                        Img2Lamp, Img2NeLamp, Img2Filt, Filt2finalspecs, img)
@@ -436,12 +435,13 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     bkg = np.mean([hdulist[1].data, hdulist[2].data], axis=0)
     SigWithoutBkg = SigWithBkg - (bkg*ScaleFac)
 
-    
-    plt.plot(SigWithoutBkg.flatten(), alpha=0.5)
-    plt.title("Extracted Spectra from all {} orders".format((SigWithBkg.shape)[0]))
-    plt.xlabel("Flattened pixels")
-    plt.ylabel("Counts")
-    plt.show()
+    if PC.INSPECTSC == 'Y':
+        plt.figure()
+        plt.plot(SigWithoutBkg.flatten(), alpha=0.5)
+        plt.title("Extracted Spectra from all {} orders".format((SigWithBkg.shape)[0]))
+        plt.xlabel("Flattened pixels")
+        plt.ylabel("Counts")
+        plt.show()
 
     # Writing a configuration file for the Lamp
     ReFitApertureInXD = [tuple(Avg_XD_shift), tuple(PixDomain)]
@@ -516,7 +516,7 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     RefDispTableFile = os.path.join(pkgpath,'data','LAMPIDENTDIR',slit,'tanspecArNe' + '{}' + '_template.npy')
     OutputWavlFile =  os.path.splitext(OutputCombLampSpec)[0] + '.OutputWavlFile' + '{}' + '.npy'
     ModelForDispersion = 'p3' # PC.WLFITFUNC
-    OutputWavlSoln = None
+    OutputWavlSoln = []
     for order in range(0, 10):
         lamp = hdularc2data[order]
         template = np.load(RefDispTableFile.format(order))
@@ -524,11 +524,8 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
             soln, shift = recalibrate.ReCalibrateDispersionSolution(lamp, template.T)
         except RuntimeError:
             soln = template[0]
-        if OutputWavlSoln is None:
-            OutputWavlSoln = soln
-        else:
-            # print(OutputWavlSoln, 'soln', soln)
-            OutputWavlFile = np.vstack((OutputWavlSoln, soln))
+        OutputWavlSoln.append(soln)
+    OutputWavlFile = OutputWavlSoln
     #to make wavelength data as ImageHdu
     AllOutWlSol = OutputWavlFile
     OutputObjSpechdul = fits.open(OutputObjSpec)
@@ -569,8 +566,8 @@ def FluxCalibration_subrout(PC):
         with open(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'Final_wlc_file.txt'),'r') as wlc_data_files:
             wlc_data = list([data for data in wlc_data_files])
         for data_file in wlc_data:
-            print(data_file)
-            # data_file = data_file[:-1]
+            if data_file[-1] == '\n':
+                data_file = data_file[:-1]
             
             star_data = fits.getdata(data_file, ext=0)
             star_header = fits.getheader(data_file)
@@ -589,7 +586,6 @@ def FluxCalibration_subrout(PC):
 
 
             OutputObjSpecFlCalFinal = data_file.rstrip('.fits') + '.flc.fits'
-            print(wl_data)
             hdulist = WriteSpecToFitsFile(FLC_data, wl_data, star_header, FLC_variance, Name1=varname, Name2='WAVELENGTH')
             hdulist.writeto(OutputObjSpecFlCalFinal, overwrite=True)
             print('The flux calibrated spectra is saved as:',OutputObjSpecFlCalFinal)
