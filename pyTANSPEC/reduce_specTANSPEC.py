@@ -278,10 +278,10 @@ def LrSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
         config.set("tracing_settings","ApertureLabel",str(ApertureLabel))
     if len(config.get("tracing_settings", "ApertureTraceFilename").strip()) < 1:
         config.set("tracing_settings","ApertureTraceFilename",str(ApertureTraceFilename))
-    if len(config.get("extraction_settings","ApertureWindow").strip()) < 1:
-        config.set("extraction_settings","ApertureWindow",str(APERTUREWINDOW))
-    if len(config.get("extraction_settings","BkgWindows").strip()) < 1:
-        config.set("extraction_settings","BkgWindows",str(BKGWINDOWS))
+    # if len(config.get("extraction_settings","ApertureWindow").strip()) < 1:
+    config.set("extraction_settings","ApertureWindow",str(APERTUREWINDOW))
+    # if len(config.get("extraction_settings","BkgWindows").strip()) < 1:
+    config.set("extraction_settings","BkgWindows",str(BKGWINDOWS))
 
     #write new config file into the output directory.
     new_config_file_star = SpectrumFile.rstrip('.fits')+'.config'
@@ -408,16 +408,17 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     config.read(ConfigFileSpecExt)
 
     #set these two variables, which are coming from the main TANSPEC confg file, into the spectrum_extractor_TANSPEC.config
+    print(ConfigFileSpecExt)
     if len(config.get("tracing_settings","ContinuumFile").strip()) < 1:
         config.set("tracing_settings","ContinuumFile",str(ContinuumFile))
     if len(config.get("tracing_settings", "ApertureLabel").strip()) < 1:
         config.set("tracing_settings","ApertureLabel",str(ApertureLabel))
     if len(config.get("tracing_settings", "ApertureTraceFilename").strip()) < 1:
         config.set("tracing_settings","ApertureTraceFilename",str(ApertureTraceFilename))
-    if len(config.get("extraction_settings","ApertureWindow").strip()) < 1:
-        config.set("extraction_settings","ApertureWindow",str(APERTUREWINDOW))
-    if len(config.get("extraction_settings","BkgWindows").strip()) < 1:
-        config.set("extraction_settings","BkgWindows",str(BKGWINDOWS))
+    # if len(config.get("extraction_settings","ApertureWindow").strip()) < 1:
+    config.set("extraction_settings","ApertureWindow",str(APERTUREWINDOW))
+    # if len(config.get("extraction_settings","BkgWindows").strip()) < 1:
+    config.set("extraction_settings","BkgWindows",str(BKGWINDOWS))
 
     #write new config file into the output directory.
     new_config_file_star = SpectrumFile.rstrip('.fits')+'.config'
@@ -446,9 +447,9 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     # Writing a configuration file for the Lamp
     ReFitApertureInXD = [tuple(Avg_XD_shift), tuple(PixDomain)]
     config.set("tracing_settings","ReFitApertureInXD",str(ReFitApertureInXD))
-
     #write new config file into the output directory.
     new_config_file_lamp = SpectrumFile.rstrip('.fits')+'.Lamp.config'
+
     with open(new_config_file_lamp, 'w') as configfile:
         config.write(configfile)
 
