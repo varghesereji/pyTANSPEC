@@ -352,6 +352,8 @@ def LrSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
 
     #WL calibration by template matching
     pkgpath = os.path.split(pkgutil.get_loader('pyTANSPEC').get_filename())[0]
+    if slit[0] == 'S':
+        slit = 'L'+slit[1:]
     # RefArFile = os.path.join(pkgpath,'data','LAMPIDENTDIR_LR',slit,'argon_lamp_template.npy' )
     # RefNeFile = os.path.join(pkgpath,'data','LAMPIDENTDIR_LR',slit,'neon_lamp_template.npy' )
     RefFile = os.path.join(pkgpath,'data','LAMPIDENTDIR_LR',slit,'tanspecArNeLR_template.npy' )
