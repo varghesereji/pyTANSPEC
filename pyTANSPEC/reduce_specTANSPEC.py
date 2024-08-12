@@ -250,10 +250,10 @@ def LrSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
         config.set("tracing_settings","ApertureLabel",str(ApertureLabel))
     if len(config.get("tracing_settings", "ApertureTraceFilename").strip()) < 1:
         config.set("tracing_settings","ApertureTraceFilename",str(ApertureTraceFilename))
-    if len(config.get("extraction_settings","ApertureWindow").strip()) < 1:
-        config.set("extraction_settings","ApertureWindow",str(APERTUREWINDOW))
-    if len(config.get("extraction_settings","BkgWindows").strip()) < 1:
-        config.set("extraction_settings","BkgWindows",str(BKGWINDOWS))
+    # if len(config.get("extraction_settings","ApertureWindow").strip()) < 1:
+    config.set("extraction_settings","ApertureWindow",str(APERTUREWINDOW))
+    # if len(config.get("extraction_settings","BkgWindows").strip()) < 1:
+    config.set("extraction_settings","BkgWindows",str(BKGWINDOWS))
 
     #write new config file into the output directory.
     new_config_file_star = SpectrumFile.rstrip('.fits')+'.config'
@@ -387,10 +387,10 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
         config.set("tracing_settings","ApertureLabel",str(ApertureLabel))
     if len(config.get("tracing_settings", "ApertureTraceFilename").strip()) < 1:
         config.set("tracing_settings","ApertureTraceFilename",str(ApertureTraceFilename))
-    if len(config.get("extraction_settings","ApertureWindow").strip()) < 1:
-        config.set("extraction_settings","ApertureWindow",str(APERTUREWINDOW))
-    if len(config.get("extraction_settings","BkgWindows").strip()) < 1:
-        config.set("extraction_settings","BkgWindows",str(BKGWINDOWS))
+    # if len(config.get("extraction_settings","ApertureWindow").strip()) < 1:
+    config.set("extraction_settings","ApertureWindow",str(APERTUREWINDOW))
+    # if len(config.get("extraction_settings","BkgWindows").strip()) < 1:
+    config.set("extraction_settings","BkgWindows",str(BKGWINDOWS))
 
     #write new config file into the output directory.
     new_config_file_star = SpectrumFile.rstrip('.fits')+'.config'
