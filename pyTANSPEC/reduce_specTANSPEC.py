@@ -508,7 +508,21 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
         lamp = hdularc2data[order]
         template = np.load(RefDispTableFile.format(order))
         soln, shift = recalibrate.ReCalibrateDispersionSolution(lamp,
-                                                                template.T)
+                                                                template.T,
+                                                                method='p3',
+                                                                initial_guess=[1,
+                                                                -PixShiftGuess*np.median(np.gradient(template.T[:,0]))*2/(max(template.T[:,0])-min(template.T[:,0])),
+                                                                1,0,0]
+                                                                )
+        
+        plt.figure()
+        plt.plot(soln, lamp/np.max(lamp), label='Observed lamp (arg+neo)')
+        plt.plot(template[0], template[1]/np.max(template[1]), label='Template')
+        plt.legend()
+        template_match_filename = os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'template_match_aperture{}.pdf'.format(order))
+        plt.title('Aperture {}'.format(order))
+        print('Sucessfully fitted, saving', template_match_filename)
+        plt.savefig(template_match_filename)
         if OutputWavlFile is None:
             OutputWavlFile = soln
         else:
