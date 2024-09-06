@@ -108,7 +108,7 @@ def SpecMake(InputFiles, method = None, ScaleF = None):
     
     N = len(InputFiles)
     fitsheader = fits.getheader(InputFiles[0])
-    SpecWavelF = fits.getdata(InputFiles[0], 3)
+    SpecWavelF = fits.getdata(InputFiles[0], 6)
     
     SpecFluxF = []    
     if  N > 1:
@@ -143,7 +143,7 @@ def SpecMake(InputFiles, method = None, ScaleF = None):
     if len(VarianceF) == 0:
         VarianceF = None
     
-    Outputhdulist = WriteSpecToFitsFile(SpecFluxF, SpecWavelF, fitsheader, VarianceF, Name1 = 'VARIANCE', Name2 = 'WAVELENGTH')
+    Outputhdulist = WriteSpecToFitsFile(SpecFluxF, Wavel=SpecWavelF, fitsheader=fitsheader, VarianceF=VarianceF, Name1 = 'VARIANCE', Name2 = 'WAVELENGTH')
 
     return Outputhdulist
         
@@ -353,7 +353,10 @@ def LrSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     # print('Template Matching')
     # print(fits.getdata(OutputArLampSpec))
     # print(RefFile)
-    wl_soln, shift = recalibrate.ReCalibrateDispersionSolution(Lamp_array, np.load(RefFile).T)
+    template = np.load(RefFile).T
+    wl_soln, shift = recalibrate.ReCalibrateDispersionSolution(Lamp_array,
+                                                               template.T,
+                                                               method='p3')
 
 
     AllOutWlSolFile = OutputWavlFile.format('all')
