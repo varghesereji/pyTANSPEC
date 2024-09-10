@@ -435,6 +435,7 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     # Writing a configuration file for the Lamp
     ReFitApertureInXD = [tuple(Avg_XD_shift), tuple(PixDomain)]
     config.set("tracing_settings","ReFitApertureInXD",str(ReFitApertureInXD))
+    config.set("tracing_settings","ShowPlot_Trace",str(False))
 
     #write new config file into the output directory.
     new_config_file_lamp = SpectrumFile.rstrip('.fits')+'.Lamp.config'
@@ -553,7 +554,7 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
         sky_spec_o = sky_spec[i] / np.median(sky_spec[i])
         axs[i//2, i%2].plot(sky_wl[i], sky_spec_o, label='Std sky')
         axs[i//2, i%2].plot(OutputWavlFile[i], sky_o, label='observed sky')
-        axs[i//2, i%2].set(xlabel='wavelength', ylabel='flux', ylim=(0.2, np.max(sky_spec_o))
+        axs[i//2, i%2].set(xlabel='wavelength', ylabel='flux', ylim=(0.2, np.max(sky_spec_o)))
         
     plt.legend()
     plt.savefig(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'sky_spectra.pdf'))
