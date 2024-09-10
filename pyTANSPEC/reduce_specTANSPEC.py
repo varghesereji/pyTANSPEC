@@ -536,6 +536,28 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     AllOutWlSolImgHDU = fits.ImageHDU(AllOutWlSol, name = 'Wavelength')
     OutputObjSpechdul.append(AllOutWlSolImgHDU)
 
+    # Plotting sky
+    sky_line = os.path.join(pkgpath, 'data/Sky_spectra/Sky_spectra_xd.fits')
+    sky_spec = fits.getdata(sky_line, ext=0)
+    sky_wl = fits.getdata(sky_line, ext=1)
+    
+    sky1 = OutputObjSpechdul[1].data
+    sky2 = OutputObjSpechdul[2].data
+
+    avg_sky = (sky1 + sky2) / 2
+
+    l = np.shape(avg_sky)[0]
+    fig, axs = plt.subplots(l//2, l//(l//2))
+    for i in range(l):
+        sky_o = avg_sky[i] / np.median(avg_sky[i])
+        sky_spec_o = sky_spec[i] / np.median(sky_spec[i])
+        axs[i//2, i%2].plot(sky_wl[i], sky_spec_o, label='Std sky')
+        axs[i//2, i%2].plot(OutputWavlFile[i], sky_o, label='observed sky')
+        axs[i//2, i%2].set(xlabel='wavelength', ylabel='flux', ylim=(0.2, np.max(sky_spec_o))
+        
+    plt.legend()
+    plt.savefig(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,'sky_spectra.pdf'))
+                           
     #wl calibrated spectra
     OutputObjSpecWlCali =  OutputObjSpec.rstrip('fits') + 'wlc.fits'
     print(OutputObjSpecWlCali)
