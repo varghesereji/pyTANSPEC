@@ -378,9 +378,9 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
 
     #finding the configuration file for spectrum extraction as well as ContinuumFile and ApertureLabel as references
     pkgpath = os.path.split(pkgutil.get_loader('pyTANSPEC').get_filename())[0]
-    ContinuumFile = os.path.join(pkgpath,'data/bd491296axd_s0.5Ahg-00031.Z.fits')
-    ApertureLabel = os.path.join(pkgpath,'data/ApLabel_bd491296axd_s0.5Ahg-00031.Z.npy')
-    ApertureTraceFilename = os.path.join(pkgpath,'data/bd491296axd_s0.5Ahg-00031.Z.fits_trace.pkl')
+    ContinuumFile = os.path.join(pkgpath,'data/op_trace_skysubt_hd37725_xd_s4.0.fits')
+    ApertureLabel = os.path.join(pkgpath,'data/aperturetracelabel_skysubt_hd37725_xd_s4.0.npy')
+    ApertureTraceFilename = os.path.join(pkgpath, 'data/aperturetrace_skysubt_hd37725_xd_s4.0.pkl')
     ConfigFileSpecExt = os.path.join(pkgpath,'config/spectrum_extractor_TANSPEC.config') #Default config file
 
     #Finding if any 'spectrum_extractor_TANSPEC.config' file exist in working directory
