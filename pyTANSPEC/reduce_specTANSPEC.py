@@ -457,7 +457,7 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     # Finding pixel offset
     template_filename = os.path.join(pkgpath, 'data/PIXELOFFSETTEMPLATES', 'pixeloffsettemplate_s0.5.npy')
     template_file = np.load(template_filename)
-    Ar_spec = fits.getdata(OutputArLampSpec, ext=0)
+    Ar_spec = fits.getdata(OutputArLampSpec, ext=0)[::-1] # The order is reversed with the new trace. Have to remove the indexing when use the old trace file.
     arc_lamp = Ar_spec[7:9].flatten()
     arc_filtered = ndimage.gaussian_filter(signal.medfilt(arc_lamp,3), sigma=10, radius=20)
     PixShiftGuess = recalibrate.calculate_pixshift_with_phase_cross_correlation(template_file, arc_filtered)
@@ -510,7 +510,7 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     for order in range(0, 10):
         print('\033[31m Doing wavelength calibration for aperture {} \033[0m'.format(order))
         lamp = hdularc2data[order]
-        template = np.load(RefDispTableFile.format(order))
+        template = np.load(RefDispTableFile.format(9-order)) # The order is reversed with the new trace.
         soln, shift = recalibrate.ReCalibrateDispersionSolution(lamp,
                                                                 template.T,
                                                                 method='p3',
@@ -551,8 +551,8 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     fig, axs = plt.subplots(l//2, l//(l//2))
     for i in range(l):
         sky_o = avg_sky[i] / np.median(avg_sky[i])
-        sky_spec_o = sky_spec[i] / np.median(sky_spec[i])
-        axs[i//2, i%2].plot(sky_wl[i], sky_spec_o, label='Std sky')
+        sky_spec_o = sky_spec[l-1-i] / np.median(sky_spec[l-1-i])
+        axs[i//2, i%2].plot(sky_wl[l-1-i], sky_spec_o, label='Std sky')
         axs[i//2, i%2].plot(OutputWavlFile[i], sky_o, label='observed sky')
         axs[i//2, i%2].set(xlabel='wavelength', ylabel='flux', ylim=(0.2, np.max(sky_spec_o)))
         
@@ -580,7 +580,7 @@ def FluxCalibration_subrout(PC):
             response_function_name = os.path.join(pkgpath, 'data', 'INSTRUMENT_RESPONSE','XD_Response_curve.npy')
         else:
             response_function_name = PC.RESPFN
-        response_function = np.load(response_function_name)
+        response_function = np.load(response_function_name)[::-1]
         # if response_function.shape()[0] == :
         #     print('This is the instrument response for LR mode. You are working of XD mode spectra')
     elif PC.TODO == 'SL':
@@ -722,7 +722,7 @@ def SpectralPairSubtraction_subrout(PC):
         outlog.close()
     print('All nights over...')
 
-def MakeMasterFlat(PC, NormContdata, slit):
+def MakeMasterFlat(PC, NormContdata, slit='S-1.0'):
     """ This function will create a master flat using the continuum flat of each night and already generated master flat. This is
     to take care of noise for higher orders (orders 10, 11 and 12). Basically, we will use the master flat to remove noise 
     in higher orders and for the lower orders, the pipeline will use the continuum lamp observed in each night for the flat correction.
@@ -778,8 +778,8 @@ def DivideSmoothGradient(PC,inputimg,outputimg):
         #Normalise this continuum flat using its median smoothed version
         NormContdata = inputimgdata / smoothGrad
         #generating the combined conti flat
-        if PC.INSTRUMENT == 'TANSPEC' and PC.GRATINGHDR == 'GRATING1':
-            hdulist[0].data = MakeMasterFlat(PC, NormContdata, slit) 
+        if PC.INSTRUMENT == 'TANSPEC' and PC.TODO == 'SX':
+            hdulist[0].data = MakeMasterFlat(PC, NormContdata) 
         else:
             hdulist[0].data = NormContdata      
         prihdr.add_history('Divided median filter Size:{0}'.format(PC.DVDMEDSMOOTHSIZE))
