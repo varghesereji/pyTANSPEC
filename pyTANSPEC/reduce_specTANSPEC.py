@@ -457,7 +457,7 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     # Finding pixel offset
     template_filename = os.path.join(pkgpath, 'data/PIXELOFFSETTEMPLATES', 'pixeloffsettemplate_s0.5.npy')
     template_file = np.load(template_filename)
-    Ar_spec = fits.getdata(OutputArLampSpec, ext=0)[::-1] # The order is reversed with the new trace. Have to remove the indexing when use the old trace file.
+    Ar_spec = fits.getdata(OutputArLampSpec, ext=0) # The order is reversed with the new trace. Have to remove the indexing when use the old trace file.
     arc_lamp = Ar_spec[7:9].flatten()
     arc_filtered = ndimage.gaussian_filter(signal.medfilt(arc_lamp,3), sigma=10, radius=20)
     PixShiftGuess = recalibrate.calculate_pixshift_with_phase_cross_correlation(template_file, arc_filtered)
@@ -510,7 +510,7 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     for order in range(0, 10):
         print('\033[31m Doing wavelength calibration for aperture {} \033[0m'.format(order))
         lamp = hdularc2data[order]
-        template = np.load(RefDispTableFile.format(9-order)) # The order is reversed with the new trace.
+        template = np.load(RefDispTableFile.format(order)) # The order is reversed with the new trace.
         soln, shift = recalibrate.ReCalibrateDispersionSolution(lamp,
                                                                 template.T,
                                                                 method='p3',
@@ -527,6 +527,7 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
         plt.title('Aperture {}'.format(order))
         print('Sucessfully fitted, saving', template_match_filename)
         plt.savefig(template_match_filename)
+        plt.close()
         if OutputWavlFile is None:
             OutputWavlFile = soln
         else:
@@ -580,7 +581,7 @@ def FluxCalibration_subrout(PC):
             response_function_name = os.path.join(pkgpath, 'data', 'INSTRUMENT_RESPONSE','XD_Response_curve.npy')
         else:
             response_function_name = PC.RESPFN
-        response_function = np.load(response_function_name)[::-1]
+        response_function = np.load(response_function_name)
         # if response_function.shape()[0] == :
         #     print('This is the instrument response for LR mode. You are working of XD mode spectra')
     elif PC.TODO == 'SL':
