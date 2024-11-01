@@ -504,7 +504,7 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     # WL calibration by template matching
     pkgpath = os.path.split(pkgutil.get_loader('pyTANSPEC').get_filename())[0]
     RefDispTableFile = os.path.join(pkgpath,'data','LAMPIDENTDIR',slit,'tanspecArNe' + '{}' + '_template.npy')
-    OutputWavlFile =  os.path.splitext(OutputCombLampSpec)[0] + '.OutputWavlFile' + '{}' + '.npy'
+    # OutputWavlFile =  os.path.splitext(OutputCombLampSpec)[0] + '.OutputWavlFile' + '{}' + '.npy'
     ModelForDispersion = 'p3' # PC.WLFITFUNC
     OutputWavlFile = None
     for order in range(0, 10):
