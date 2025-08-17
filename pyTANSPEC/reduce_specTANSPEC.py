@@ -23,6 +23,7 @@ import pkgutil
 from astropy.stats import mad_std
 from astropy.stats import biweight_location
 from scipy import signal, ndimage
+from scipy.interpolate import CubicSpline
 
 import fnmatch
 import time
@@ -75,6 +76,28 @@ def WriteSpecToFitsFile(SpecFlux, Wavel, fitsheader, VarianceF=None, Name1=None,
     else:
         hdulist = fits.HDUList([hdul1, hdul2])
     return hdulist  
+
+def CalculateSNR(flux, variance, wavelength, refwl=10000):
+    '''
+    Function to calculate SNR of the spectra at a specific wavelength.
+    flux: Spectral Flux array
+    variance: Variance array
+    wavelength: Wavelength array
+    refwl: Reference wavelength (default 10000) in Angstrom
+    '''
+    wl_range = (refwl-1, refwl+1)
+    wl_mask = (wavelength > wl_range[0]) & (wavelength < wl_range[-1])
+
+    wl_masked = wavelength[wl_mask]
+    idx = np.argsort(wl_masked)
+    wl_masked = wl_masked[idx]
+
+    flux_masked = flux[wl_mask][idx]
+    var_masked = variance[wl_mask][idx]
+    flux_refwl = CubicSpline(wl_masked, flux_masked)(refwl)
+    var_refwl = CubicSpline(wl_masked, var_masked)(refwl)
+    snr = flux_refwl / np.sqrt(var_refwl)
+    return round(snr, 2)
 
 
 def SpecMake(InputFiles, method = None, ScaleF = None):
@@ -142,7 +165,11 @@ def SpecMake(InputFiles, method = None, ScaleF = None):
 
     if len(VarianceF) == 0:
         VarianceF = None
-    
+    if VarianceF is not None:
+        refwl = 10000
+        snr = CalculateSNR(SpecFluxF, variance=VarianceF, wavelength=SpecWavelF, refwl=refwl)
+        print("SNR at {} Angstrom is: {}".format(refwl, snr))
+        fitsheader["SNR"] = (snr, "S/N at {} Angstrom".format(refwl))
     Outputhdulist = WriteSpecToFitsFile(SpecFluxF, Wavel=SpecWavelF, fitsheader=fitsheader, VarianceF=VarianceF, Name1 = 'VARIANCE', Name2 = 'WAVELENGTH')
 
     return Outputhdulist
