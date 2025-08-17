@@ -85,6 +85,7 @@ def CalculateSNR(flux, variance, wavelength, refwl=10000):
     wavelength: Wavelength array
     refwl: Reference wavelength (default 10000) in Angstrom
     '''
+    refwl = float(refwl)
     wl_range = (refwl-1, refwl+1)
     wl_mask = (wavelength > wl_range[0]) & (wavelength < wl_range[-1])
 
@@ -100,7 +101,7 @@ def CalculateSNR(flux, variance, wavelength, refwl=10000):
     return round(snr, 2)
 
 
-def SpecMake(InputFiles, method = None, ScaleF = None):
+def SpecMake(InputFiles, method = None, ScaleF = None, refwl=10000):
     """ First scaled the spectra based on background windows and spectra extraction window
     then Combined if there are multiple wavelength calibrated spectra in the InputFiles.
 
@@ -166,7 +167,7 @@ def SpecMake(InputFiles, method = None, ScaleF = None):
     if len(VarianceF) == 0:
         VarianceF = None
     if VarianceF is not None:
-        refwl = 10000
+
         snr = CalculateSNR(SpecFluxF, variance=VarianceF, wavelength=SpecWavelF, refwl=refwl)
         print("SNR at {} Angstrom is: {}".format(refwl, snr))
         fitsheader["SNR"] = (snr, "S/N at {} Angstrom".format(refwl))
@@ -240,16 +241,16 @@ def SpectralExtraction_subrout(PC):
 
         if PC.SCOMBINE == 'YES' and N> 1:
             OutputObjSpecWlCaliFinal = OutputObjSpecWlCaliList[0].rstrip('.fits') + '.final' + '.avg.fits'
-            OutputObjSpecWlCaliFinalhdul = SpecMake(OutputObjSpecWlCaliList, method = 'mean',ScaleF=ScaleFac)
+            OutputObjSpecWlCaliFinalhdul = SpecMake(OutputObjSpecWlCaliList, method = 'mean',ScaleF=ScaleFac, refwl=PC.SNRREF)
             OutputObjSpecWlCaliFinalhdul.writeto(OutputObjSpecWlCaliFinal, overwrite=True)
         elif PC.SCOMBINE == 'NO' and N> 1:
             for i in range(N):
                 OutputObjSpecWlCaliFinal = OutputObjSpecWlCaliList[i].rstrip('.fits') + '.final.fits'
-                OutputObjSpecWlCaliFinalhdul = SpecMake([OutputObjSpecWlCaliList[i]], method = None,ScaleF=ScaleFac)
+                OutputObjSpecWlCaliFinalhdul = SpecMake([OutputObjSpecWlCaliList[i]], method = None,ScaleF=ScaleFac, refwl=PC.SNRREF)
                 OutputObjSpecWlCaliFinalhdul.writeto(OutputObjSpecWlCaliFinal, overwrite=True)
         elif N == 1:
             OutputObjSpecWlCaliFinal = OutputObjSpecWlCaliList[0].rstrip('.fits') + '.final.fits'
-            OutputObjSpecWlCaliFinalhdul = SpecMake(OutputObjSpecWlCaliList, method = None, ScaleF=ScaleFac)
+            OutputObjSpecWlCaliFinalhdul = SpecMake(OutputObjSpecWlCaliList, method = None, ScaleF=ScaleFac, refwl=PC.SNRREF)
             OutputObjSpecWlCaliFinalhdul.writeto(OutputObjSpecWlCaliFinal, overwrite=True)
         else:
             raise NotImplementedError('Unknown combine {0}'.format(PC.SCOMBINE))
@@ -1863,6 +1864,8 @@ class PipelineConfig(object):
                         self.NORMORDER = con.split()[1]
                     elif con.split()[0] == "SCOMBINE=" :
                         self.SCOMBINE = con.split()[1]
+                    elif con.split()[0] == "SNRREF=":
+                        self.SNRREF = con.split()[1]
                     elif con.split()[0] == "DISPAXIS=" :
                         self.DISPAXIS = con.split()[1]
                     elif con.split()[0] == "REMOVE_CONTINUUM_GRAD=" :
