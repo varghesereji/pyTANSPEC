@@ -42,6 +42,7 @@ The config file should be saved in the directory where the sub-directory of your
 -   'SPECCONFIGFILE=': Config file for SpectrumExtractor. Keep it blank.
 -   'WLFitFunc=': Function to fit Wavelength Solution. (Recommented l4)
 -   'SCOMBINE=': Give 'YES' if you want to average wavelength calibrated spectra.
+-   'SNRREF=' : Spefify the wavelength to calculate SNR.
 
 
 ## Run the pipeline
