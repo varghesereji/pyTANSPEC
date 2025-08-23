@@ -225,16 +225,17 @@ def SpectralExtraction_subrout(PC):
 
             # Spectrum extraction for object
             SpectrumFile = PC.GetFullPath(img)
+            SpectrumFileHeader = fits.getheader(SpectrumFile, ext=0)
             OutputObjSpec = SpectrumFile.rstrip('.fits')+'.ms.fits'
             #ReFitApertureInXD = 'p1'
             APERTUREWINDOW = PC.APERTUREWINDOW
             BKGWINDOWS = PC.BKGWINDOWS            
             ScaleFac = (APERTUREWINDOW[1] - APERTUREWINDOW[0]) / (BKGWINDOWS[1][1] - BKGWINDOWS[1][0])
 
-            if PC.TODO == 'SX':
+            if SpectrumFileHeader['GRATING'] == 'grating1':
                 OutputObjSpecWlCaliList = xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputObjSpec,APERTUREWINDOW,BKGWINDOWS,night,
                                                                        Img2Lamp, Img2NeLamp, Img2Filt, Filt2finalspecs, img)
-            elif PC.TODO == 'SL':
+            elif SpectrumFileHeader['GRATING'] == 'grating2':
                 OutputObjSpecWlCaliList = LrSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputObjSpec,APERTUREWINDOW,BKGWINDOWS,night,
                                                                        Img2Lamp, Img2NeLamp, Img2Filt, Filt2finalspecs, img)
         N = len(OutputObjSpecWlCaliList)
