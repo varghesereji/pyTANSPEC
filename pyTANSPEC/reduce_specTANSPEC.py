@@ -487,6 +487,7 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     template_file = np.load(template_filename)
     Ar_spec = fits.getdata(OutputArLampSpec, ext=0) # The order is reversed with the new trace. Have to remove the indexing when use the old trace file.
     arc_lamp = Ar_spec[7:9].flatten()
+    arc_lamp = np.asarray(arc_lamp, dtype=np.float64) # Making sure that the array type is float64.
     arc_filtered = ndimage.gaussian_filter(signal.medfilt(arc_lamp,3), sigma=10, radius=20)
     PixShiftGuess = recalibrate.calculate_pixshift_with_phase_cross_correlation(template_file, arc_filtered)
     print('This night have a pixel offset of', PixShiftGuess)
