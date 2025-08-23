@@ -807,7 +807,7 @@ def DivideSmoothGradient(PC,inputimg,outputimg):
         #Normalise this continuum flat using its median smoothed version
         NormContdata = inputimgdata / smoothGrad
         #generating the combined conti flat
-        if PC.INSTRUMENT == 'TANSPEC' and PC.TODO == 'SX':
+        if PC.INSTRUMENT == 'TANSPEC' and prihdr['GRATING'] == 'grating1':
             hdulist[0].data = MakeMasterFlat(PC, NormContdata) 
         else:
             hdulist[0].data = NormContdata      
@@ -916,7 +916,7 @@ def CombDith_FlatCorr_subrout(PC,method="median"):
                 shutil.copy2(night+'/'+imglist[0],os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,OutCombimg))  #Copying the file dito..
             elif len(imglist) > 1 :
                 OutCombimg=imglist[0][:-5]+'_'+method+'_'+imglist[-1][:-5]+'.fits'  #output file name
-
+                
                 with open(os.path.join(PC.RAWDATADIR,PC.OUTDIR,night,OutCombimg+'.imcombine.List'),'w') as imcombineinputFile:
                     imcombineinputFile.write('\n'.join([PC.RAWDATADIR+'/'+night+'/'+img for img in imglist])+'\n')
                     #imcombineinputFile.write('\n'.join(img for img in imglist)+'\n')
@@ -1331,6 +1331,12 @@ def SelectionofFrames_subrout(PC):
         print("Working on night : "+night)
         PC.currentnight = night # Updating the night directory for using GetFullPath()
         print("Obs log file: file://{0}".format(os.path.join(PC.RAWDATADIR,night,LogFilename)))
+        night_dict = os.path.join(PC.RAWDATADIR, night)
+        # night_data_list = [f for f in os.listdir(night_dict) if f.endswith(".fits")]
+        # night_data_list_full = [os.path.join(night_dict, i) for i in night_data_list]
+        # header_keys = ['OBJECT', 'FNAME', 'ARGONL', 'NEONL', 'CONT1L', 'CONT2L', 'CALMIR', 'SLIT', 'GRATING']
+        # grouped_dict,_ = imarith.grouping_files(header_keys, night_data_list_full)
+        # print(grouped_dict)
         InpObjRE = input("Enter Regular Expression to select Science object frames (default: {0}): ".format(ObjRE)).strip(' ')
         if InpObjRE:
             ObjRE = InpObjRE
@@ -2171,8 +2177,8 @@ def main(raw_args=None):
         
         
     if PC.TODO == 'P' : todoinwords = 'Photometry' # For future
-    elif PC.TODO == 'SX' : todoinwords = 'XDSpectroscopy'
-    elif PC.TODO == 'SL' : todoinwords = 'LRSpectroscopy'
+    elif PC.TODO[0] == 'S' : todoinwords = 'Spectroscopy'
+    # elif PC.TODO == 'SL' : todoinwords = 'LRSpectroscopy'
 
 
     print(" ---------------- Welcome to \033[91m {0} {1} \033[0m Pipeline --------------- \n".format(PC.INSTRUMENT,todoinwords))
