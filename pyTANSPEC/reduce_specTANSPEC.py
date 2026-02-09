@@ -1163,7 +1163,7 @@ def DitherDetection(ObjectFile, ContWindowSelection, startLoc=None,avgHWindow=21
         startLoc = ObjectFile.shape[1]//2
     # Starting labelling Reference XD cut data; 
     WindowStart = ContWindowSelection[0] 
-    WindowEnd = ContWindowSelection[1] 
+    WindowEnd = ContWindowSelection[1]
     RefXD = np.nanmedian(ObjectFile[WindowStart:WindowEnd,startLoc-avgHWindow:startLoc+avgHWindow],axis=1) 
     Refpixels = np.arange(len(RefXD))+WindowStart
     Bkg = signal.order_filter(RefXD,domain=[True]*TraceHWidth*5,rank=int(TraceHWidth*5/10))
