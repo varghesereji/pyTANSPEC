@@ -231,7 +231,13 @@ def SpectralExtraction_subrout(PC):
             APERTUREWINDOW = PC.APERTUREWINDOW
             BKGWINDOWS = PC.BKGWINDOWS            
             ScaleFac = (APERTUREWINDOW[1] - APERTUREWINDOW[0]) / (BKGWINDOWS[1][1] - BKGWINDOWS[1][0])
-
+            
+            if SpectrumFileHeader['GRATING'] == str(-1):
+                if PC.TODO == 'SX':
+                    SpectrumFileHeader['GRATING'] = 'grating1'
+                elif PC.TODO == 'SL':
+                    SpectrumFileHeader['GRATING'] = 'grating2'
+            
             if SpectrumFileHeader['GRATING'] == 'grating1':
                 OutputObjSpecWlCaliList = xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputObjSpec,APERTUREWINDOW,BKGWINDOWS,night,
                                                                        Img2Lamp, Img2NeLamp, Img2Filt, Filt2finalspecs, img)
