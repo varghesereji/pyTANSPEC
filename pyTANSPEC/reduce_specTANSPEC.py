@@ -466,9 +466,13 @@ def xdSpectralExtraction_subrout(PC,OutputObjSpecWlCaliList,SpectrumFile,OutputO
     plt.xlabel("Flattened pixels")
     plt.ylabel("Counts")
     plt.show()
-
+    print(Avg_XD_shift)
     # Writing a configuration file for the Lamp
-    ReFitApertureInXD = [tuple(Avg_XD_shift), tuple(PixDomain)]
+    ReFitApertureInXD = (
+        tuple(x.item() if isinstance(x, np.generic) else x for x in Avg_XD_shift),
+        tuple(x.item() if isinstance(x, np.generic) else x for x in PixDomain),
+    )
+    print(ReFitApertureInXD)
     config.set("tracing_settings","ReFitApertureInXD",str(ReFitApertureInXD))
     config.set("tracing_settings","ShowPlot_Trace",str(False))
 
